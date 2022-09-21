@@ -106,19 +106,25 @@ class KqlQuery:
 
     def __post_init__(self):
         if self.source_path is not None:
-            self.query_name = self.source_path.split("/")[-1]
+            self.query_name = self.source_path.rsplit("/", maxsplit=1)[-1]
         if self.query:
-            self.query_hash = hashlib.sha256(bytes(self.query, encoding="utf-8"), usedforsecurity=False).hexdigest()
+            self.query_hash = hashlib.sha256(
+                bytes(self.query, encoding="utf-8"),
+                # usedforsecurity=False
+            ).hexdigest()
 
     def asdict(self):
+        """Return a dictionary of attributes."""
         return asdict(self)
 
     def to_json(self):
+        """Return JSON representation of attributes."""
         return json.dumps(self.asdict())
 
     # helper methods and properties
     @property
     def source_types(self):
+        """Return list of acceptable source_types."""
         del self
         return _SOURCE_TYPES
 
@@ -136,5 +142,5 @@ class KqlQuery:
 
     @classmethod
     def kql_list_to_df(cls, kql_queries: List["KqlQuery"]):
-        """Return JSON from a list of KqlQuery instances."""
+        """Return a pandas DataFrame from a list of KqlQuery instances."""
         return pd.DataFrame(cls.kql_list_to_pylist(kql_queries))
