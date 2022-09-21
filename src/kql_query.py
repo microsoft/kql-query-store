@@ -105,7 +105,8 @@ class KqlQuery:
     query_version: int = 0
 
     def __post_init__(self):
-        if self.source_path is not None:
+        """Run post"""
+        if self.query_name is None and self.source_path is not None:
             self.query_name = self.source_path.rsplit("/", maxsplit=1)[-1]
         if self.query:
             self.query_hash = hashlib.sha256(
