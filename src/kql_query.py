@@ -98,6 +98,7 @@ class KqlQuery:
     source_type: SourceType = "text"
     source_index: int = 0
     query_name: Optional[str] = None
+    context: Optional[str] = None
     attributes: Dict[str, Any] = field(default_factory=dict)
     kql_properties: Dict[str, Any] = field(default_factory=dict)
     query_id: str = field(default_factory=_uuid_str)
