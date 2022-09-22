@@ -105,14 +105,21 @@ def main(args):
         "Parsing %d queries.", len(results)
     )
     for query in store.queries:
-        kql_properties = parse_kql(query)
-        query.kql_properties = kql_properties
         try:
-            store.update(query)
-            raise ValueError("test")
+            kql_properties = parse_kql(query.query)
         except Exception as err:
             logging.exception(
-                "Failed to parse query '%s'.",
+                "Failed to parse query '%s'.\n %s",
+                query.query_id,
+                query.query,
+            )
+            continue
+        query.kql_properties = kql_properties
+        try:
+            store.add_kql_properties(query.query_id, kql_properties)
+        except Exception as err:
+            logging.exception(
+                "Failed to update kql properties '%s'.",
                 query.query_id,
             )
 
