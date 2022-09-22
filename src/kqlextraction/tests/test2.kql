@@ -1,0 +1,3 @@
+Foo
+| where A == 1
+| summarize count() by B
