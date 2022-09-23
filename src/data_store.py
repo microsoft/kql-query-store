@@ -4,9 +4,8 @@
 # license information.
 # --------------------------------------------------------------------------
 """DataStore class."""
-from hashlib import sha256
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 import json
 import pandas as pd
 
@@ -47,15 +46,15 @@ KqlQueryList = List[KqlQuery]
 class DataStore:
     """DataStore class for KqlQuery store."""
 
-    _ATTRIB_INDEXES = {"tactics": list, "techniques": list}
-    _KQL_INDEXES = {
+    _ATTRIB_INDEXES: Dict[str, type] = {"tactics": list, "techniques": list}
+    _KQL_INDEXES: Dict[str, type] = {
         "tables": list,
         "operators": list,
         "fields": list,
         "functioncalls": list,
         "joins": dict,
     }
-    _ALL_INDEXES = {**_ATTRIB_INDEXES, **_KQL_INDEXES}
+    _ALL_INDEXES: Dict[str, type] = {**_ATTRIB_INDEXES, **_KQL_INDEXES}
 
     _OPERATOR = {
         "startswith": "^{expr}.*",
@@ -70,7 +69,6 @@ class DataStore:
         json_path: Optional[str] = None,
     ):
         self._json_path = json_path
-        self._internal_data: Dict[str, KqlQuery] = {}
         if json_path:
             self._data = {
                 query.query_id: KqlQuery(**query)
@@ -82,19 +80,9 @@ class DataStore:
             else:
                 self._data = {query["query_id"]: KqlQuery(**query) for query in kql_queries}
         # self.attributes = self._extract_attributes()
+        self._data_df = pd.DataFrame(self.queries).set_index("query_id")
         self._indexes: Dict[str, pd.DataFrame] = {}
         self._create_indexes("attributes")
-
-    @property
-    def _data(self) -> Dict[str, KqlQuery]:
-        """Return internal data."""
-        return self._internal_data
-
-    @_data.setter
-    def _data(self, value: Dict[str, KqlQuery]):
-        """Set internal data to `value`."""
-        self._internal_data = value
-        self._data_df = pd.DataFrame(self.queries).set_index("query_id")
 
     @property
     def queries(self) -> List[KqlQuery]:
@@ -109,7 +97,7 @@ class DataStore:
     def to_json(self, file_path: Optional[str] = None) -> Optional[str]:
         """Return the queries as JSON or save to `file_path`, if specified."""
         if file_path is not None:
-            Path(file_path).write_text(self.to_json())
+            Path(file_path).write_text(self.to_json(), encoding="utf-8")
         return json.dumps(self.queries_dict)
 
     def to_df(self) -> pd.DataFrame:
@@ -118,18 +106,26 @@ class DataStore:
 
     def get_query_ids(self) -> pd.DataFrame:
         """Return subset of query columns."""
-        return self._data_df[["source_path", "query_name" "query_hash"]]
+        columns = ["source_path", "query_name", "query_hash"]
+        if self._data_df is None:
+            return pd.DataFrame(columns=columns)
+        return self._data_df[columns]
 
     def add_queries(self, queries: KqlQueryList):
         """Add a list of queries to the store."""
         self._data.update({query.query_id: query for query in queries})
         self._create_indexes("attributes")
         self._create_indexes("kql_properties")
+        self._data_df = pd.DataFrame(self.queries).set_index("query_id")
 
     def add_query(self, query: KqlQuery):
         """Add a single query to the store."""
         self._data[query.query_id] = query
         self._add_item_to_indexes(query)
+        self._data_df = pd.concat([
+            self._data_df,
+            pd.DataFrame(query).set_index("query_id")
+        ])
 
     def add_kql_properties(self, query_id: str, kql_properties: Dict[str, Any]):
         """Add Kql properties to a query."""
@@ -181,7 +177,10 @@ class DataStore:
         - query_name={matches: "AAD.*"} - match based on a  operator like regex, startswith, contains
         - table=["table1", "table2"] - the queries that use both these tables
 
+        ds.find_queries(query_name={"contains": "AAD"}, tables=["table1", "table2"], operations=[...])
         """
+        if self._data_df is None:
+            return pd.DataFrame()
         criteria = True
         for arg_name, arg_expr in kwargs.items():
 
@@ -221,9 +220,15 @@ class DataStore:
     def _create_indexes(self, sub_key: str):
         """Create indexes for child items in queries."""
         # create DF with attributes expanded to columns
-
-        exp_df = self._data_df[[sub_key]].apply(
-            lambda x: pd.Series(x[sub_key]), result_type="expand", axis=1
+        if self._data_df is None:
+            return
+        exp_df = (
+            # avoid rows with null or empty dictionaries
+            self._data_df[~((self._data_df[sub_key] == {}) | (self._data_df[sub_key].isna()))]
+            [[sub_key]]
+            .apply(
+                lambda x: pd.Series(x[sub_key]), result_type="expand", axis=1
+            )
         )
         for key, data_type in self._ALL_INDEXES.items():
             if key not in exp_df.columns:
@@ -245,21 +250,7 @@ class DataStore:
         for key in self._ALL_INDEXES:
             if key not in index_attribs:
                 continue
-            df_index = list(index_attribs[key])
-                # for item in :
-                    # new_item = pd.DataFrame(
-                    #     data=[{"query_id": query.query_id}],
-                    #     index=[item],
-                    # )
-                    # self._indexes[key].append(new_item)
-
-            # if data_type == dict:
-            #     for item in index_attribs[key]:
-            #         new_item = pd.DataFrame(
-            #             data=[{"query_id": query.query_id}],
-            #             index=[item],
-            #         )
-            #         self._indexes[key].append(new_item)
+            df_index = list(index_attribs[key]) if isinstance(index_attribs[key], (list, dict)) else None
             if df_index:
                 current_index = self._indexes.get(key)
                 new_index_items = pd.DataFrame(
@@ -269,7 +260,7 @@ class DataStore:
                 if current_index is None:
                     self._indexes[key] = new_index_items
                 else:
-                    self._indexes[key] = self._indexes[key].append(new_index_items)
+                    self._indexes[key] = pd.concat([self._indexes[key], new_index_items])
 
     @staticmethod
     def _create_list_index(data, key_col):
