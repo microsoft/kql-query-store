@@ -1,0 +1,8 @@
+Foo
+| mv-expand Z
+| join kind=leftsemi hint.remote=true Bar on T
+| join kind=leftsemi (
+    Baz
+    | where X > 5
+    | project R
+  ) on R

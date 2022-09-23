@@ -35,7 +35,7 @@ def extract_kql(kql):
         return json.loads(kql_extraction.stdout.strip())
 
     except Exception as ex:
-        print("[!] KqlExtraction Failed")
+        print("[!] KqlExtraction Failed\n", ex)
     finally:
         os.unlink(temp_path)
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     for kql_file in os.listdir(os.path.join(base_path, TEST_PATH)):
         kql_file = os.path.join(base_path, TEST_PATH, kql_file)
 
-        with open(kql_file, "r") as f:
+        with open(kql_file, "r", encoding="utf-8") as f:
             kql = f.read()
 
         kql_description = extract_kql(kql)
