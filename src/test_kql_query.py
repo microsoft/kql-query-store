@@ -1,5 +1,6 @@
 from .kql_query import KqlQuery
 
+
 def test_kql_query():
     kql = KqlQuery(
         source_path="https://github.com/a/b/file.kql",
@@ -14,6 +15,3 @@ def test_kql_query():
     KqlQuery.kql_list_to_json([kql, kql])
 
     KqlQuery.kql_list_to_df([kql, kql])
-
-
-

@@ -10,11 +10,9 @@ import uuid
 from pathlib import Path
 
 import pytest
-import pytest_check as check
 
 from .kql_query import KqlQuery
 from .data_store import DataStore
-from .kql_extract import extract_kql
 
 __author__ = "Ian Hellen"
 
@@ -164,17 +162,3 @@ def test_datastore_find(get_kqlquery_list):
     assert all_items_len > len(ds.find_queries(tactics=["Compromise"]))
     assert len(ds.find_queries(tactics=["BadTactic"])) == 0
     assert len(ds.find_queries(query_name={"matches": "query.*"})) == all_items_len
-
-
-_TEST_KQL = Path(__file__).parent.joinpath("kqlextraction/tests")
-
-@pytest.fixture
-def get_queries_with_kql():
-    queries = []
-    for file in Path(_TEST_KQL).glob("*.kql"):
-
-        query_text = file.read_text(encoding="utf-8")
-        for query in [KqlQuery(**get_random_query(i)) for i in range(2)]:
-            query.query = query_text
-            queries.append(query)
-    return queries

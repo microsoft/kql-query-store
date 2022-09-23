@@ -6,8 +6,9 @@
 """KqlQuery data class."""
 import hashlib
 import json
+import re
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields
 from typing import Any, Dict, List, Literal, Optional
 
 import pandas as pd
@@ -16,8 +17,8 @@ __author__ = "Ian Hellen"
 
 
 _SOURCE_TYPES = ["text", "markdown", "sentinel_yaml", "api", "other"]
-
 SourceType = Literal["text", "markdown", "sentinel_yaml", "api", "other"]
+_REPO_NAME = re.compile(r"https://github\.com/(?P<name>[^/]+/[^/]+)/.*", re.IGNORECASE)
 
 
 def _uuid_str():
@@ -97,6 +98,7 @@ class KqlQuery:
     query: str
     source_type: SourceType = "text"
     source_index: int = 0
+    repo_name: Optional[str] = None
     query_name: Optional[str] = None
     context: Optional[str] = None
     attributes: Dict[str, Any] = field(default_factory=dict)
@@ -114,6 +116,10 @@ class KqlQuery:
                 bytes(self.query, encoding="utf-8"),
                 # usedforsecurity=False
             ).hexdigest()
+        if self.repo_name is None and self.source_path is not None:
+            match = _REPO_NAME.match(self.source_path)
+            if match:
+                self.repo_name = match["name"]
 
     def asdict(self):
         """Return a dictionary of attributes."""
@@ -129,6 +135,11 @@ class KqlQuery:
         """Return list of acceptable source_types."""
         del self
         return _SOURCE_TYPES
+
+    @classmethod
+    def field_names(cls) -> List[str]:
+        """Return list of fields."""
+        return [field.name for field in fields(cls)]
 
     @staticmethod
     def kql_list_to_pylist(kql_queries: List["KqlQuery"]):

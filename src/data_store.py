@@ -5,8 +5,9 @@
 # --------------------------------------------------------------------------
 """DataStore class."""
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 import json
+import numpy as np
 import pandas as pd
 
 from .kql_query import KqlQuery
@@ -71,18 +72,28 @@ class DataStore:
         self._json_path = json_path
         if json_path:
             self._data = {
-                query.query_id: KqlQuery(**query)
+                query.get("query_id"): KqlQuery(**query)
                 for query in self._read_json_data(json_path)
             }
         elif kql_queries:
             if isinstance(kql_queries[0], KqlQuery):
                 self._data = {query.query_id: query for query in kql_queries}
             else:
-                self._data = {query["query_id"]: KqlQuery(**query) for query in kql_queries}
+                self._data = {
+                    query["query_id"]: KqlQuery(**query) for query in kql_queries
+                }
+        else:
+            self._data = {}
         # self.attributes = self._extract_attributes()
-        self._data_df = pd.DataFrame(self.queries).set_index("query_id")
+        if self._data:
+            self._data_df = pd.DataFrame(self.queries).set_index("query_id")
+        else:
+            self._data_df = pd.DataFrame(
+                self.queries, columns=KqlQuery.field_names()
+            ).set_index("query_id")
         self._indexes: Dict[str, pd.DataFrame] = {}
         self._create_indexes("attributes")
+        self._create_indexes("kql_properties")
 
     @property
     def queries(self) -> List[KqlQuery]:
@@ -122,10 +133,9 @@ class DataStore:
         """Add a single query to the store."""
         self._data[query.query_id] = query
         self._add_item_to_indexes(query)
-        self._data_df = pd.concat([
-            self._data_df,
-            pd.DataFrame(query).set_index("query_id")
-        ])
+        self._data_df = pd.concat(
+            [self._data_df, pd.DataFrame(query).set_index("query_id")]
+        )
 
     def add_kql_properties(self, query_id: str, kql_properties: Dict[str, Any]):
         """Add Kql properties to a query."""
@@ -182,8 +192,15 @@ class DataStore:
         if self._data_df is None:
             return pd.DataFrame()
         criteria = True
-        for arg_name, arg_expr in kwargs.items():
+        debug = kwargs.pop("debug", False)
+        valid_fields = KqlQuery.field_names() + list(self._indexes.keys())
 
+        for arg_name, arg_expr in kwargs.items():
+            if arg_name not in valid_fields:
+                raise ValueError(
+                    f"Unknown attribute name {arg_name}",
+                    f"Search expression: {arg_expr}."
+                )
             if isinstance(arg_expr, str):
                 criteria &= self._data_df[arg_name] == arg_expr
             if isinstance(arg_expr, dict):
@@ -193,8 +210,10 @@ class DataStore:
                     criteria &= self._data_df[arg_name].str.match(
                         crit_expr.format(expr=expr), case=case
                     )
+                    if debug:
+                        print(arg_expr, criteria.value_counts())
             if isinstance(arg_expr, list) and arg_name in self._indexes:
-                query_ids = None
+                query_ids: Optional[Set] = None
                 # we're looking for queries in the indexes that have a matching value
                 for match_value in arg_expr:
                     # matched_ids == all query_ids with this property
@@ -203,14 +222,21 @@ class DataStore:
                             self._indexes[arg_name].index == match_value
                         ]["query_id"].values
                     )
+                    if debug:
+                        print(len(matched_ids))
                     # AND this with query_ids (unless None, then just use this as the
                     # first criterion)
                     query_ids = (
-                        matched_ids if query_ids is None else matched_ids & query_ids
+                        matched_ids if query_ids is None else matched_ids | query_ids
                     )
+
                 # Add the matched query IDs to criteria
                 criteria &= self._data_df.index.isin(query_ids)
+                if debug:
+                    print(arg_expr, criteria.value_counts())
         # return the data subset
+        if debug:
+            print("final criteria:", criteria.value_counts())
         return self._data_df[criteria]
 
     @staticmethod
@@ -224,9 +250,9 @@ class DataStore:
             return
         exp_df = (
             # avoid rows with null or empty dictionaries
-            self._data_df[~((self._data_df[sub_key] == {}) | (self._data_df[sub_key].isna()))]
-            [[sub_key]]
-            .apply(
+            self._data_df[
+                ~((self._data_df[sub_key] == {}) | (self._data_df[sub_key].isna()))
+            ][[sub_key]].apply(
                 lambda x: pd.Series(x[sub_key]), result_type="expand", axis=1
             )
         )
@@ -250,21 +276,27 @@ class DataStore:
         for key in self._ALL_INDEXES:
             if key not in index_attribs:
                 continue
-            df_index = list(index_attribs[key]) if isinstance(index_attribs[key], (list, dict)) else None
+            df_index = (
+                list(index_attribs[key])
+                if isinstance(index_attribs[key], (list, dict))
+                else None
+            )
             if df_index:
                 current_index = self._indexes.get(key)
                 new_index_items = pd.DataFrame(
                     data=[{"query_id": query.query_id} for _ in df_index],
-                    index=df_index
+                    index=df_index,
                 )
                 if current_index is None:
                     self._indexes[key] = new_index_items
                 else:
-                    self._indexes[key] = pd.concat([self._indexes[key], new_index_items])
+                    self._indexes[key] = pd.concat(
+                        [self._indexes[key], new_index_items]
+                    )
 
     @staticmethod
     def _create_list_index(data, key_col):
-        return data[[key_col]].explode(key_col).reset_index().set_index([key_col])
+        return data[[key_col]].explode(key_col).dropna().reset_index().set_index([key_col])
 
     @staticmethod
     def _extract_dict_keys(row, col_name):
@@ -273,8 +305,9 @@ class DataStore:
                 col_name: [
                     inner_val
                     for val in row[col_name].values()
-                    for inner_val in val.keys()
+                    for inner_val in val
                     if isinstance(val, dict)
+                    and inner_val != np.nan
                 ]
             }
         return row

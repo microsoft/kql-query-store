@@ -3,67 +3,52 @@ using Kusto.Language.Symbols;
 using Kusto.Language.Syntax;
 using Kusto.Language.Utils;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 
 namespace Microsoft.Mstic.KqlQuery.Extraction
 {
     public class KqlExtractionResult
     {
+        public string Id { get; set; } = "";
         public HashSet<string> FunctionCalls { get; set; } = new HashSet<string>();
         public Dictionary<string, HashSet<string>> Joins { get; set; } = new Dictionary<string, HashSet<string>>();
         public HashSet<string> Operators { get; set; } = new HashSet<string>();
         public HashSet<string> Tables { get; set; } = new HashSet<string>();
-        // return input query ID here (apologies for Python naming)
-        public string? query_id;
-
-    }
-
-    // Input is a list of these
-    public class KqlQueryInput
-    {
-        public string? query_id;
-        public string? query_text;
     }
 
     public class KqlExtraction
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine();
-            Environment.ExitCode = new KqlExtraction().RunExtraction(args);
-            Console.WriteLine();
+            string? l = null;
+            while ((l = Console.ReadLine()) != null)
+            {
+                var kqlQuery = l.Split(',', 2);
+
+                var kqlExtractionResult = new KqlExtractionResult();
+                if (kqlQuery.Length == 2)
+                {
+                    try
+                    {
+                        kqlExtractionResult.Id = kqlQuery[0];
+                        if (RunExtraction(kqlExtractionResult, Encoding.UTF8.GetString(Convert.FromBase64String(kqlQuery[1]))) == 0)
+                        {
+                            Console.WriteLine(JsonSerializer.Serialize(kqlExtractionResult));
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("[!] Error: Caught Exception \"{0}\"", e.Message);
+                    }
+                }
+            }
         }
 
-        private int RunExtraction(string[] args)
+        private static int RunExtraction(KqlExtractionResult kqlExtractionResult, string kql)
         {
-            if (args.Length != 1)
-            {
-                Console.WriteLine("\nUsage: KqlExtraction path/to/query.kql\n");
-                return 2;
-            }
-
-            var kqlFile = args[0];
-            if (!File.Exists(kqlFile))
-            {
-                Console.WriteLine("\nUsage: KqlExtraction path/to/query.kql\n");
-                return 2;
-            }
-
-            // read the file
-            var kql = File.ReadAllText(kqlFile);
-            // try to deserialize as JSON
-            // if exception, treat as KqlQuery
-            // else invoke code below on each KqlQueryInput.query_text
-            // saving results to KqlExtractionResult with transferred query_id
-            // write output (I guess we may need a second parameter for output file)
-
-
-            var kqlExtractionResult = new KqlExtractionResult();
-
             try
             {
-                var kql = File.ReadAllText(kqlFile);
-
                 var kustoGlobals = GlobalState.Default.WithClusterList(Array.Empty<ClusterSymbol>());
                 var kqlQuery = KustoCode.ParseAndAnalyze(kql, globals: kustoGlobals);
 
@@ -181,9 +166,6 @@ namespace Microsoft.Mstic.KqlQuery.Extraction
                 Console.WriteLine("[!] Error: Exception '{0}'", ex.Message);
                 return 2;
             }
-
-
-            Console.WriteLine(JsonSerializer.Serialize(kqlExtractionResult));
 
             return 0;
         }

@@ -6,18 +6,13 @@
 """Test Query downloader."""
 import random
 from pathlib import Path
-import pytest
 
 from .kql_download import get_sentinel_queries, get_community_queries
 from .data_store import DataStore
 
 __author__ = "Ian Hellen"
 
-# pylint: disable=redefined-outer-name, protected-access
-
-@pytest.fixture(scope="module")
-def fixture_name():
-    """Fixture_docstring."""
+# pylint: disable=protected-access
 
 
 def test_get_sentinel_queries(tmp_path):

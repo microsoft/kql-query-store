@@ -110,12 +110,12 @@ def main(args):
     )
     for query in tqdm(store.queries):
         try:
-            kql_properties = extract_kql(query.query)
+            kql_properties = extract_kql(kqlquery=query.query, query_id=query.query_id)
         except Exception as err:  # pylint: disable=broad-except
             logging.exception(
                 "Failed to parse query '%s'.\n %s",
                 query.query_id,
-                query.query,
+                query.source_path,
                 exc_info=err
             )
             continue
