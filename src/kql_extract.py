@@ -4,13 +4,14 @@
 # license information.
 # --------------------------------------------------------------------------
 """Kql extract threading interface with .Net Kqlextract."""
-from base64 import b64encode
+import contextlib
 import json
-import os
+import logging
 import queue
 import subprocess
 import threading
 import time
+from base64 import b64encode
 from pathlib import Path
 from typing import Optional
 from uuid import uuid4
@@ -28,6 +29,16 @@ worker_thread = None
 
 # pylint: disable=broad-except
 
+_EXTRACT_ARGS = [
+    "dotnet",
+    "run",
+    "-c",
+    "Release",
+    "--project",
+    str(CS_PROJ_PATH),
+]
+_SYNTAX_ERROR = "[!]"
+
 
 def _worker_thread_proc():
     try:
@@ -39,20 +50,15 @@ def _worker_thread_proc():
                     kql_extraction = None
                 if kql_extraction is None:
                     kql_extraction = subprocess.Popen(
-                        [
-                            "dotnet",
-                            "run",
-                            "-c",
-                            "Release",
-                            "--project",
-                            str(CS_PROJ_PATH),
-                        ],
+                        _EXTRACT_ARGS,
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                     )
             except Exception as subp_ex:
-                print(f"[!] Exception Starting KqlExtraction Process.\n{subp_ex}")
+                logging.exception(
+                    "[!] Exception Starting KqlExtraction Process.", exc_info=subp_ex
+                )
                 break
 
             try:
@@ -65,21 +71,29 @@ def _worker_thread_proc():
                 kql_extraction.stdin.flush()
 
                 kql_extraction_result = kql_extraction.stdout.readline()
-                worker_results.put(json.loads(kql_extraction_result))
+                if str(kql_extraction_result, encoding="utf-8").strip().startswith(_SYNTAX_ERROR):
+                    worker_results.put(_syntax_err_result(uuid))
+                try:
+                    worker_results.put(json.loads(kql_extraction_result))
+                except json.JSONDecodeError:
+                    worker_results.put(_syntax_err_result(uuid))
             except queue.Empty:
                 pass
             except Exception as thread_ex:
-                print(
-                    '[!] Unhandled Exception in "while not worker_exit.is_set":',
-                    thread_ex,
+                logging.exception(
+                    "[!] Unhandled Exception in 'while not worker_exit.is_set', query_id='%s', \ninput sample: %s",
+                    uuid,
+                    kql_extraction_result[:200],
+                    exc_info=thread_ex,
                 )
                 kql_extraction.kill()
 
-        if kql_extraction.poll() is None:
+        if kql_extraction is not None and kql_extraction.poll() is None:
             kql_extraction.kill()
     except Exception as thread_out_ex:
-        print(
-            '[!] Unhandled Exception at "while not worker_exit.is_set()', thread_out_ex
+        logging.exception(
+            "[!] Unhandled Exception at 'while not worker_exit.is_set()'",
+            exc_info=thread_out_ex,
         )
 
 
@@ -88,17 +102,39 @@ def extract_kql(kql_query: str, query_id: Optional[str] = None):
     kql_id = query_id or str(uuid4())
     worker_queue.put((kql_id, kql_query))
 
-    try:
+    with contextlib.suppress(Exception):
         kql_result = {}
         while True:
             kql_result = worker_results.get(timeout=5.0)
             if "Id" in kql_result and kql_result["Id"] == kql_id:
                 break
-    except Exception as extr_err:
-        #print("[!] Exception in extract_kql", extr_err)
-        pass
-
     return kql_result
+
+
+def start():
+    """Start extractor worker thread."""
+    global worker_thread  # pylint: disable=invalid-name, global-use
+    worker_thread = threading.Thread(target=_worker_thread_proc)
+    worker_thread.start()
+    logging.info("Started kql extractor thread.")
+
+
+def stop():
+    """Stop worker thread."""
+    worker_exit.set()
+    worker_thread.join()
+    logging.info("Kql extractor thread stopped.")
+
+
+def _syntax_err_result(query_id):
+    return {
+        "Id": query_id,
+        "FunctionCalls": [],
+        "Joins": {},
+        "Operators": [],
+        "Tables": [],
+        "Valid_query": False,
+    }
 
 
 if __name__ == "__main__":
@@ -112,7 +148,11 @@ if __name__ == "__main__":
         for file_no, kql_file in enumerate(test_path.glob("*.kql")):
             # kql_file = os.path.join(base_path, "tests", kql_file)
             print(f"[{file_no}], {kql_file.name}")
-            print(f"[{file_no}]\n".join(kql_file.read_text(encoding="utf-8").split("\n")[:5]))
+            print(
+                f"[{file_no}]\n".join(
+                    kql_file.read_text(encoding="utf-8").split("\n")[:5]
+                )
+            )
             with open(kql_file, "r", encoding="utf-8") as f:
                 kql_text = f.read()
 
