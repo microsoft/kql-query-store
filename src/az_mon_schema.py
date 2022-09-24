@@ -61,7 +61,7 @@ def _get_security_category_list(resp: requests.models.Response) -> bs4.element.T
     soup = bs4.BeautifulSoup(resp.text, "html.parser")
 
     result = soup.find("div", class_="content")
-    sec_header =result.find("h2", id="security")
+    sec_header = result.find("h2", id="security")
     return sec_header.find_next_sibling()
 
 
