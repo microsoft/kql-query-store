@@ -4,9 +4,11 @@
 # license information.
 # --------------------------------------------------------------------------
 """Test kql extraction integration."""
+
+from datetime import datetime, timezone
 from pathlib import Path
 from .data_store import DataStore
-from .kql_extract import extract_kql
+from . import kql_extract as extract
 from .kql_query import KqlQuery
 
 from .test_data_store import get_random_query
@@ -40,10 +42,18 @@ def test_extract_from_ds_query(get_queries_with_kql):
     ds = DataStore(queries)
     assert len(ds.queries) == len(get_queries_with_kql)
 
-    for query in ds.queries:
-        result = extract_kql(query.query, query_id=query.query_id)
-        ds.add_kql_properties(query_id=query.query_id, kql_properties=result)
-
+    try:
+        extract.start()
+        start = datetime.now(timezone.utc)
+        print(start)
+        for query in ds.queries:
+            result = extract.extract_kql(query.query, query_id=query.query_id)
+            print(result)
+            ds.add_kql_properties(query_id=query.query_id, kql_properties=result)
+        end = datetime.now(timezone.utc)
+        print(end, "total time", end - start)
+    finally:
+        extract.stop()
     print([len(query.kql_properties) for query in ds.queries])
     assert all(len(query.kql_properties) for query in ds.queries)
     assert len(ds._indexes) >= 6
