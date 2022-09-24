@@ -73,10 +73,12 @@ def _worker_thread_proc():
                 kql_extraction_result = kql_extraction.stdout.readline()
                 if str(kql_extraction_result, encoding="utf-8").strip().startswith(_SYNTAX_ERROR):
                     worker_results.put(_syntax_err_result(uuid))
-                try:
+                else:
                     worker_results.put(json.loads(kql_extraction_result))
-                except json.JSONDecodeError:
-                    worker_results.put(_syntax_err_result(uuid))
+                    # try:
+                    #     worker_results.put(json.loads(kql_extraction_result))
+                    # except json.JSONDecodeError:
+                    #     worker_results.put(_syntax_err_result(uuid))
             except queue.Empty:
                 pass
             except Exception as thread_ex:
