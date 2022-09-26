@@ -8,9 +8,9 @@ def main() -> None:
     st.title(":mag_right: Interactive KQL Query Store")
 
     with st.expander("Expand to Read more about the Project"):
-        st.write(Path(".\README.md").read_text())
+        st.write(Path("README.md").read_text())
 
-    st.success("Select a page on side bar to naviagate")
+    st.success(":point_left: Select a page on left side bar to naviagate pages")
 
 
 if __name__ == "__main__":
