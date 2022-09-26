@@ -3,3 +3,5 @@ streamlit-aggrid
 pandas
 requests
 altair
+beautifulsoup4
+tqdm
