@@ -14,7 +14,21 @@ GitHub search interface is not flexible to satisfy various custom search needs f
 - Interactive dashboard to explore the structured data.
 - Insights on various KQL queries from Azure Sentinel
 
-## Data Flow Diagram
+## Architecture
+<img src="./images/DataFlowDiagram.png"
+alt="Data Flow Diagram" title="Data Flow Diagram" height="170"/>
+
+
+## Docker instruction
+if you wish to host this locally/in-house, you can use below instructions to build docker images and host it. For more detailed instructions, check out Streamlit docs. [Deploy Streamlit using Docker](https://docs.streamlit.io/knowledge-base/tutorials/deploy/docker)
+
+Build image
+
+`docker build -t kql-query-store .`
+
+Run the docker container
+
+`docker run -p 8501:8501 kql-query-store`
 
 ## Trademarks
 
