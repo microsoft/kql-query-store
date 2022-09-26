@@ -5,3 +5,5 @@ requests
 altair
 beautifulsoup4
 tqdm
+lxml
+html5lib
