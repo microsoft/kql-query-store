@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from .kql_query import KqlQuery
 from .data_store import DataStore
+from .kql_query import KqlQuery
 
 __author__ = "Ian Hellen"
 
@@ -44,65 +44,149 @@ json_kql_parse = """
 }
 """
 
-table_names = ['AADB2CRequestLogs', 'AADDomainServicesAccountLogon',
-       'AADDomainServicesAccountManagement',
-       'AADDomainServicesDirectoryServiceAccess',
-       'AADDomainServicesLogonLogoff', 'AADDomainServicesPolicyChange',
-       'AADDomainServicesPrivilegeUse', 'AADManagedIdentitySignInLogs',
-       'AADNonInteractiveUserSignInLogs', 'AADProvisioningLogs',
-       'AADRiskyServicePrincipals', 'AADRiskyUsers',
-       'AADServicePrincipalRiskEvents', 'AADServicePrincipalSignInLogs',
-       'AADUserRiskEvents', 'ADFSSignInLogs', 'AlertEvidence',
-       'Anomalies', 'AppServiceIPSecAuditLogs',
-       'AppServiceServerlessSecurityPluginData', 'ASimDnsActivityLogs',
-       'AuditLogs', 'AWSCloudTrail', 'AWSGuardDuty', 'AWSVPCFlow',
-       'AZFWApplicationRule', 'AZFWApplicationRuleAggregation',
-       'AZFWDnsQuery', 'AZFWIdpsSignature',
-       'AZFWInternalFqdnResolutionFailure', 'AZFWNatRule',
-       'AZFWNatRuleAggregation', 'AZFWNetworkRule',
-       'AZFWNetworkRuleAggregation', 'AZFWThreatIntel', 'AzureActivity',
-       'AzureDiagnostics', 'BehaviorAnalytics', 'CloudAppEvents',
-       'CommonSecurityLog', 'ConfidentialWatchlist', 'DeviceEvents',
-       'DeviceFileCertificateInfo', 'DeviceFileEvents',
-       'DeviceImageLoadEvents', 'DeviceInfo', 'DeviceLogonEvents',
-       'DeviceNetworkEvents', 'DeviceNetworkInfo', 'DeviceProcessEvents',
-       'DeviceRegistryEvents', 'DeviceTvmSecureConfigurationAssessment',
-       'DeviceTvmSoftwareInventory', 'DeviceTvmSoftwareVulnerabilities',
-       'DSMAzureBlobStorageLogs', 'DSMDataClassificationLogs',
-       'DSMDataLabelingLogs', 'DynamicEventCollection',
-       'EmailAttachmentInfo', 'EmailEvents', 'EmailPostDeliveryEvents',
-       'EmailUrlInfo', 'GCPAuditLogs', 'HDInsightSecurityLogs',
-       'HuntingBookmark', 'IdentityDirectoryEvents',
-       'IdentityLogonEvents', 'IdentityQueryEvents', 'LinuxAuditLog',
-       'McasShadowItReporting', 'NetworkAccessTraffic', 'NetworkSessions',
-       'NSPAccessLogs', 'OfficeActivity', 'PowerBIActivity',
-       'ProjectActivity', 'ProtectionStatus',
-       'PurviewDataSensitivityLogs', 'SecurityAlert', 'SecurityBaseline',
-       'SecurityBaselineSummary', 'SecurityDetection', 'SecurityEvent',
-       'SecurityIoTRawEvent', 'SecurityRecommendation', 'SentinelAudit',
-       'SentinelHealth', 'SigninLogs', 'Syslog',
-       'ThreatIntelligenceIndicator', 'Update', 'UrlClickEvents',
-       'UserAccessAnalytics', 'UserPeerAnalytics', 'Watchlist',
-       'WindowsEvent', 'WindowsFirewall', 'WireData']
+table_names = [
+    "AADB2CRequestLogs",
+    "AADDomainServicesAccountLogon",
+    "AADDomainServicesAccountManagement",
+    "AADDomainServicesDirectoryServiceAccess",
+    "AADDomainServicesLogonLogoff",
+    "AADDomainServicesPolicyChange",
+    "AADDomainServicesPrivilegeUse",
+    "AADManagedIdentitySignInLogs",
+    "AADNonInteractiveUserSignInLogs",
+    "AADProvisioningLogs",
+    "AADRiskyServicePrincipals",
+    "AADRiskyUsers",
+    "AADServicePrincipalRiskEvents",
+    "AADServicePrincipalSignInLogs",
+    "AADUserRiskEvents",
+    "ADFSSignInLogs",
+    "AlertEvidence",
+    "Anomalies",
+    "AppServiceIPSecAuditLogs",
+    "AppServiceServerlessSecurityPluginData",
+    "ASimDnsActivityLogs",
+    "AuditLogs",
+    "AWSCloudTrail",
+    "AWSGuardDuty",
+    "AWSVPCFlow",
+    "AZFWApplicationRule",
+    "AZFWApplicationRuleAggregation",
+    "AZFWDnsQuery",
+    "AZFWIdpsSignature",
+    "AZFWInternalFqdnResolutionFailure",
+    "AZFWNatRule",
+    "AZFWNatRuleAggregation",
+    "AZFWNetworkRule",
+    "AZFWNetworkRuleAggregation",
+    "AZFWThreatIntel",
+    "AzureActivity",
+    "AzureDiagnostics",
+    "BehaviorAnalytics",
+    "CloudAppEvents",
+    "CommonSecurityLog",
+    "ConfidentialWatchlist",
+    "DeviceEvents",
+    "DeviceFileCertificateInfo",
+    "DeviceFileEvents",
+    "DeviceImageLoadEvents",
+    "DeviceInfo",
+    "DeviceLogonEvents",
+    "DeviceNetworkEvents",
+    "DeviceNetworkInfo",
+    "DeviceProcessEvents",
+    "DeviceRegistryEvents",
+    "DeviceTvmSecureConfigurationAssessment",
+    "DeviceTvmSoftwareInventory",
+    "DeviceTvmSoftwareVulnerabilities",
+    "DSMAzureBlobStorageLogs",
+    "DSMDataClassificationLogs",
+    "DSMDataLabelingLogs",
+    "DynamicEventCollection",
+    "EmailAttachmentInfo",
+    "EmailEvents",
+    "EmailPostDeliveryEvents",
+    "EmailUrlInfo",
+    "GCPAuditLogs",
+    "HDInsightSecurityLogs",
+    "HuntingBookmark",
+    "IdentityDirectoryEvents",
+    "IdentityLogonEvents",
+    "IdentityQueryEvents",
+    "LinuxAuditLog",
+    "McasShadowItReporting",
+    "NetworkAccessTraffic",
+    "NetworkSessions",
+    "NSPAccessLogs",
+    "OfficeActivity",
+    "PowerBIActivity",
+    "ProjectActivity",
+    "ProtectionStatus",
+    "PurviewDataSensitivityLogs",
+    "SecurityAlert",
+    "SecurityBaseline",
+    "SecurityBaselineSummary",
+    "SecurityDetection",
+    "SecurityEvent",
+    "SecurityIoTRawEvent",
+    "SecurityRecommendation",
+    "SentinelAudit",
+    "SentinelHealth",
+    "SigninLogs",
+    "Syslog",
+    "ThreatIntelligenceIndicator",
+    "Update",
+    "UrlClickEvents",
+    "UserAccessAnalytics",
+    "UserPeerAnalytics",
+    "Watchlist",
+    "WindowsEvent",
+    "WindowsFirewall",
+    "WireData",
+]
 
-field_names = ['SourceType', 'DomainBehaviorVersion', 'OperationName',
-       'BookmarkName', 'SentinelResourceId', 'OSName', 'ActualResult',
-       'CreatedBy', 'CreatedDateTime', 'LatencySamplingTimeStamp',
-       'Environment', 'CorrelationId', 'MachineGroup',
-       'SumResponseBodySize', 'RecordId', 'DstUserUpn', 'ResourceId',
-       'InitiatingProcessSHA1', 'ObjectId', 'AssetType', 'Title',
-       'InitiatingProcessAccountDomain', 'AuthorizationInfo',
-       'TargetContextId', 'LogonId', 'CveTags', 'SourceComputerId',
-       'ResourceIdentity', 'ClusterName', 'TdoAttributes',
-       'EntityMapping', 'DnssecOkBit', 'DeviceCustomString5',
-       'TransmittedServices', 'DeviceCustomDate2Label']
+field_names = [
+    "SourceType",
+    "DomainBehaviorVersion",
+    "OperationName",
+    "BookmarkName",
+    "SentinelResourceId",
+    "OSName",
+    "ActualResult",
+    "CreatedBy",
+    "CreatedDateTime",
+    "LatencySamplingTimeStamp",
+    "Environment",
+    "CorrelationId",
+    "MachineGroup",
+    "SumResponseBodySize",
+    "RecordId",
+    "DstUserUpn",
+    "ResourceId",
+    "InitiatingProcessSHA1",
+    "ObjectId",
+    "AssetType",
+    "Title",
+    "InitiatingProcessAccountDomain",
+    "AuthorizationInfo",
+    "TargetContextId",
+    "LogonId",
+    "CveTags",
+    "SourceComputerId",
+    "ResourceIdentity",
+    "ClusterName",
+    "TdoAttributes",
+    "EntityMapping",
+    "DnssecOkBit",
+    "DeviceCustomString5",
+    "TransmittedServices",
+    "DeviceCustomDate2Label",
+]
 
 
 def get_random_items(data=table_names, count=3):
-    return list({
-        random.choice(data)
-        for _ in range(count)
-    })
+    return list({random.choice(data) for _ in range(count)})
+
 
 def get_random_query(index=0):
     tactic_idx = index % 7
@@ -116,16 +200,22 @@ def get_random_query(index=0):
         # "context": "text from markdown",
         "attributes": {
             "description": "Query one description",
-            "tactics": get_random_items(data=["Exploitation", "Compromise", "LateralMovement"], count=2),
+            "tactics": get_random_items(
+                data=["Exploitation", "Compromise", "LateralMovement"], count=2
+            ),
             "techniques": [f"T10{tactic_idx:0>2d}", f"T1{tactic_idx:0>2d}5"],
-            "test_dict": {"joins": {"inner": ["one", "two"], "outer": ["three", "four"]}}
-        }
+            "test_dict": {
+                "joins": {"inner": ["one", "two"], "outer": ["three", "four"]}
+            },
+        },
     }
+
 
 @pytest.fixture
 def get_raw_queries():
 
     return [get_random_query(i) for i in range(5)]
+
 
 @pytest.fixture
 def get_kqlquery_list():

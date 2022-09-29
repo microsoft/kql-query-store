@@ -7,13 +7,13 @@
 
 from datetime import datetime, timezone
 from pathlib import Path
-from .data_store import DataStore
-from . import kql_extract as extract
-from .kql_query import KqlQuery
-
-from .test_data_store import get_random_query
 
 import pytest
+
+from . import kql_extract as extract
+from .data_store import DataStore
+from .kql_query import KqlQuery
+from .test_data_store import get_random_query
 
 __author__ = "Ian Hellen"
 
@@ -21,6 +21,7 @@ __author__ = "Ian Hellen"
 
 
 _TEST_KQL = Path(__file__).parent.joinpath("test_data")
+
 
 @pytest.fixture
 def get_queries_with_kql():

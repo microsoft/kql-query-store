@@ -71,7 +71,11 @@ def _worker_thread_proc():
                 kql_extraction.stdin.flush()
 
                 kql_extraction_result = kql_extraction.stdout.readline()
-                if str(kql_extraction_result, encoding="utf-8").strip().startswith(_SYNTAX_ERROR):
+                if (
+                    str(kql_extraction_result, encoding="utf-8")
+                    .strip()
+                    .startswith(_SYNTAX_ERROR)
+                ):
                     worker_results.put(_syntax_err_result(uuid))
                 else:
                     worker_results.put(json.loads(kql_extraction_result))

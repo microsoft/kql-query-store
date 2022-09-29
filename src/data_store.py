@@ -4,14 +4,14 @@
 # license information.
 # --------------------------------------------------------------------------
 """DataStore class."""
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
-import json
+
 import numpy as np
 import pandas as pd
 
 from .kql_query import KqlQuery
-
 
 __author__ = "Ian Hellen"
 
@@ -209,7 +209,7 @@ class DataStore:
             if arg_name not in valid_fields:
                 raise ValueError(
                     f"Unknown attribute name {arg_name}",
-                    f"Search expression: {arg_expr}."
+                    f"Search expression: {arg_expr}.",
                 )
             if isinstance(arg_expr, str):
                 criteria &= self._data_df[arg_name] == arg_expr
@@ -240,17 +240,15 @@ class DataStore:
         for match_value in arg_expr:
             # matched_ids == all query_ids with this property
             matched_ids = set(
-                self._indexes[arg_name][
-                    self._indexes[arg_name].index == match_value
-                ]["query_id"].values
+                self._indexes[arg_name][self._indexes[arg_name].index == match_value][
+                    "query_id"
+                ].values
             )
         if debug:
             print(len(matched_ids))
         # AND this with query_ids (unless None, then just use this as the
         # first criterion)
-        return (
-            matched_ids if query_ids is None else matched_ids | query_ids
-        )
+        return matched_ids if query_ids is None else matched_ids | query_ids
 
     @staticmethod
     def _read_json_data(json_path: str):
@@ -316,7 +314,9 @@ class DataStore:
 
     @staticmethod
     def _create_list_index(data, key_col):
-        return data[[key_col]].explode(key_col).dropna().reset_index().set_index(key_col)
+        return (
+            data[[key_col]].explode(key_col).dropna().reset_index().set_index(key_col)
+        )
 
     @staticmethod
     def _create_bool_index(data, key_col):
@@ -330,8 +330,7 @@ class DataStore:
                     inner_val
                     for val in row[col_name].values()
                     for inner_val in val
-                    if isinstance(val, dict)
-                    and inner_val != np.nan
+                    if isinstance(val, dict) and inner_val != np.nan
                 ]
             }
         return row

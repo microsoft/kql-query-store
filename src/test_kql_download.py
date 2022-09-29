@@ -7,8 +7,8 @@
 import random
 from pathlib import Path
 
-from .kql_download import get_sentinel_queries, get_community_queries
 from .data_store import DataStore
+from .kql_download import get_community_queries, get_sentinel_queries
 
 __author__ = "Ian Hellen"
 
