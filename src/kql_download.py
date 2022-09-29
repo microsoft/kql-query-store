@@ -96,7 +96,9 @@ def _sent_dfs_to_kql_query_list(detections_df, hunting_df, solutions_df):
 # ### KQL - Community Github Repos
 
 
-def get_community_queries(output_dir: Path = _CURR_DIR, config: Union[Path, str] = "repos.yaml"):
+def get_community_queries(
+    output_dir: Path = _CURR_DIR, config: Union[Path, str] = "repos.yaml"
+):
     """Return KqlQuery list from community repos."""
     # Read yaml config file
     repos = read_config(config)
@@ -107,7 +109,13 @@ def get_community_queries(output_dir: Path = _CURR_DIR, config: Union[Path, str]
     for item in repos:
         url = format_repo_url(item["Github"]["repo"], item["Github"]["branch"])
         repo_urls.append(url)
-        tmp_dirs.append(str(output_dir.joinpath(f"{item['Github']['repo']}-{item['Github']['branch']}")))
+        tmp_dirs.append(
+            str(
+                output_dir.joinpath(
+                    f"{item['Github']['repo']}-{item['Github']['branch']}"
+                )
+            )
+        )
 
     # download github urls one by one
     for url in repo_urls:
@@ -120,8 +128,7 @@ def get_community_queries(output_dir: Path = _CURR_DIR, config: Union[Path, str]
         _remove_tmp_folder(tmp_dir)
         tmp_dirs.remove(tmp_dir)
     return [
-        query if isinstance(query, KqlQuery)
-        else KqlQuery(**query)
+        query if isinstance(query, KqlQuery) else KqlQuery(**query)
         for query in chain(txt_queries, md_queries)
     ]
 
@@ -160,7 +167,5 @@ def _remove_tmp_folder(tmp_dir):
             shutil.rmtree(tmp_dir)
         except Exception as err:  # pylint: disable=broad-except
             logging.exception(
-                "Error trying to remove temporary folder '%s'.",
-                tmp_dir,
-                exc_info=err
+                "Error trying to remove temporary folder '%s'.", tmp_dir, exc_info=err
             )

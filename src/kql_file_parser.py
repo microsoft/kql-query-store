@@ -96,9 +96,7 @@ def parse_yaml(parent_dir, child_dir):
                 parsed_yaml_df = json_normalize(yaml.safe_load(file_stream))
             except Exception as err:  # pylint: disable=broad-except
                 logging.exception(
-                    "Exception parsing yaml_query %s",
-                    query,
-                    exc_info=err
+                    "Exception parsing yaml_query %s", query, exc_info=err
                 )
                 continue
             parsed_yaml_df["GithubURL"] = urllib.parse.quote(
@@ -163,16 +161,19 @@ def parse_markdown_to_dict(repo_name, branch_name, src_path):
                 in_kql = True
                 continue
             if line.strip() == "```":
-                kql_query_list.append(KqlQuery(
-                    query="\n".join(kql_text),
-                    source_path=urllib.parse.quote(
-                        str(file_path).replace(str(parent_dir), git_repo_url), safe=":/"
-                    ),
-                    source_type="markdown",
-                    source_index=qry_index,
-                    query_name=last_header or f"{file_path.stem}_{qry_index}",
-                    context="\n".join(context[-10:]),
-                ))
+                kql_query_list.append(
+                    KqlQuery(
+                        query="\n".join(kql_text),
+                        source_path=urllib.parse.quote(
+                            str(file_path).replace(str(parent_dir), git_repo_url),
+                            safe=":/",
+                        ),
+                        source_type="markdown",
+                        source_index=qry_index,
+                        query_name=last_header or f"{file_path.stem}_{qry_index}",
+                        context="\n".join(context[-10:]),
+                    )
+                )
                 qry_index += 1
                 in_kql = False
                 kql_text = []

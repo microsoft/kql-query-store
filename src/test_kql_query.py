@@ -3,8 +3,7 @@ from .kql_query import KqlQuery
 
 def test_kql_query():
     kql = KqlQuery(
-        source_path="https://github.com/a/b/file.kql",
-        query="SecurityAlert | take 1"
+        source_path="https://github.com/a/b/file.kql", query="SecurityAlert | take 1"
     )
     print(kql)
     print(kql.asdict())

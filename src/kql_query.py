@@ -8,7 +8,7 @@ import hashlib
 import json
 import re
 import uuid
-from dataclasses import dataclass, field, asdict, fields
+from dataclasses import asdict, dataclass, field, fields
 from typing import Any, Dict, List, Literal, Optional
 
 import pandas as pd
@@ -144,9 +144,7 @@ class KqlQuery:
     @staticmethod
     def kql_list_to_pylist(kql_queries: List["KqlQuery"]):
         """Return a list of Python dicts from a list of KqlQuery instances."""
-        return [
-            kql.asdict() for kql in kql_queries
-        ]
+        return [kql.asdict() for kql in kql_queries]
 
     @classmethod
     def kql_list_to_json(cls, kql_queries: List["KqlQuery"]):

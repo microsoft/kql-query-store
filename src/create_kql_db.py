@@ -7,21 +7,21 @@
 
 import argparse
 import logging
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
-
-import sys
 
 sys.path.append(str(Path(__file__).parent))
 
 from tqdm.auto import tqdm
 
-# from .kql_query import KqlQuery
-from .kql_download import get_sentinel_queries, get_community_queries
-from .data_store import DataStore
 from . import kql_extract as extract
 from .az_mon_schema import AzMonitorSchemas
+from .data_store import DataStore
+
+# from .kql_query import KqlQuery
+from .kql_download import get_community_queries, get_sentinel_queries
 
 # ######### MOCK Stuff for stubbing code
 # from unittest.mock import MagicMock
@@ -180,20 +180,7 @@ def main(args):
         extract.stop()
     logging.info("Finished getting KQL properties for %d kql queries.", len(results))
 
-    if args.az_schemas:
-        logging.info("Getting Azure Monitor schema data.")
-        az_schemas = AzMonitorSchemas()
-        az_schemas.get_az_mon_schemas()
-        schema_json = Path(args.out).joinpath("az_mon_schemas.json")
-        schema_df = Path(args.out).joinpath("az_mon_schemas.json")
-        schema_json.write_text(az_schemas.to_json(), encoding="utf-8")
-        az_schemas.schemas.to_pickle(schema_df)
-        logging.info(
-            "Saved schema data to %s and %s.", str(schema_json), str(schema_df)
-        )
-
-    # get table schema
-    # write JSON and DF
+    # write output
     out_json_path = _get_output_file(args, "json")
     store.to_json(out_json_path)
     logging.info("Writing JSON output to %s", out_json_path)
@@ -202,6 +189,21 @@ def main(args):
         out_df_path = _get_output_file(args, "pkl")
         query_df.to_pickle(out_df_path)
         logging.info("Writing Pickled dataframe output to %s", out_df_path)
+
+    # get Azure monitor table schema
+    # and write JSON and DF
+    if args.az_schemas:
+        logging.info("Getting Azure Monitor schema data.")
+        az_schemas = AzMonitorSchemas()
+        az_schemas.get_az_mon_schemas()
+        schema_json = Path(args.out).joinpath("az_mon_schemas.json")
+        schema_df = Path(args.out).joinpath("az_mon_schemas.pkl")
+        schema_json.write_text(az_schemas.to_json(), encoding="utf-8")
+        az_schemas.schemas.to_pickle(schema_df)
+        logging.info(
+            "Saved schema data to %s and %s.", str(schema_json), str(schema_df)
+        )
+
     logging.info("Job completed")
     logging.info("============================================")
 

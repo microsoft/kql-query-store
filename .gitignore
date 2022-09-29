@@ -1,0 +1,7 @@
+**/.vs/**
+**/bin/Debug/**
+**/bin/Release/**
+**/obj/Debug/**
+**/obj/Release/**
+**/__pycache__/**
+**/obj/**
