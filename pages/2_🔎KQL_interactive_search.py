@@ -12,7 +12,7 @@ if ".." not in sys.path:
 
 from src.data_store import DataStore
 
-_TEST_JSON = "test_runs/kql_query_db-2023-03-28-10-19-16.json"
+_TEST_JSON = "test_runs/kql_query_db-2022-09-24-02-51-49.json"
 ds = DataStore(json_path=_TEST_JSON)
 
 
